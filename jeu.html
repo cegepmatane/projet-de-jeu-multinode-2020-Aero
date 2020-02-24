@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Aero - The Game</title>
+        <script src="librairie/easeljs-0.8.2.min.js"></script>
+        <script src="js/ArrierePlan.js"></script>
+        <script src="js/Obstacle.js"></script>
+        <script src="js/Joueur.js"></script>
+        <script src="js/Piece.js"></script>
+        <script src="js/JeuAero.js"></script>
+        <script src="js/VueAccueil.js"></script>
+        <script src="js/VueJeu.js"></script>
+        <script src="js/VueFin.js"></script>
+        <script src="js/application.js"></script>
+        <link rel="stylesheet" href="css/style.css">
+        <style>
+            body{
+                padding: 0;
+                margin: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <script type="plain/text" id="page-accueil">
+            <div id="accueil">
+                <h1>Aero: The Game</h1>
+                <p>
+                    Bonjour et bienvenue sur le jeu Aero. Votre but est simple : 
+                    parcourir les toits de la ville à la recherche des émeraudes cachées le plus rapidement possible.
+                    Attention, vous n'êtes pas seul à convoiter ces trésors immémoriaux...ou l'êtes vous ?
+                </p>
+                <form id="formulaire-joueur">
+                    <label>Entrer votre nom</label>
+                    <input type="text" id="nom-joueur"/>
+                    <input type="submit" id="enregistrer-joueur"/>
+                </form>
+                <div id="btn">
+                    <a href="#jouer">Jouer</a>
+                </div>
+            </div>
+        </script>
+        <script type="plain/text" id="page-jeu">
+            <canvas id="ecran-jeu" width="1000" height="800" ></canvas>
+        </script>
+    
+        <script type="plain/text" id="page-fin">
+            <div>
+                <h1>Fin de la partie</h1>
+                <p>{texte-fin-partie}</p>
+                <div id="btn">
+                    <a href="#accueil">Accueil</a>
+                </div>
+            </div>
+        </script>
+    </body>
+</html>
