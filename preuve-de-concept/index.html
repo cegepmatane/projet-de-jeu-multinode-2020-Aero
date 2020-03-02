@@ -1,0 +1,165 @@
+<html>
+  <head>
+    <title>Allo Multinode</title>
+    <meta charset="utf-8" content="">
+    <style>
+
+    </style>
+    <!-- <script type="text/javascript" src="URLFacile.js"></script> -->
+    <script type="text/javascript" src="MultiNode.js"></script>
+  </head>
+  <body>
+    <h1>Allo Multinode - Preuve de concept</h1>
+    <form id="formulaire-pseudo">
+      <fieldset>
+        <div class="champ">
+          <label for="pseudo">Entrez votre pseudonyme: </label>
+          <input type="text" id="champ-pseudo" name="pseudo" placeholder="Hy-Vong"/>
+        </div>
+        <input type="submit" value="Enregistrer"/>
+      </fieldset>
+    </form>
+    <script type="text/javascript">
+
+      //function attendre(time) {
+      //    return new Promise((resolve) => setTimeout(resolve, time));
+      //}
+
+    var pseudonyme;
+    var serveurJeu = new MultiNode();
+    //attendre(500).then(() => {});
+
+    //VARIABLES ET CONSTANTES LOCALES AU NAVIGATEUR ET DONC SANS IMPACT SUR LE JEU
+
+    const LARGEUR_ECRAN = 1000;
+    const POSITION_SOL_Y = 800;
+
+  //LISTE DES VARIABLES DU ÉCHANGÉES EN MULTI
+  /*=====================================*/
+    
+    //Le joueur effectuant l'action
+    var joueurFaisantAction = "";
+
+
+    //Position de chaque joueur (x ,y) : posJoueurX, posJoueurY, posAdversaireX, posAdversaireY
+    var posJoueurX = LARGEUR_ECRAN / 2;
+    var posJoueurY = 0;
+    var posAdversaireX = LARGEUR_ECRAN / 2;
+    var posAdversaireY = 0;
+
+    //Vitesse de chaque joueur: vitesseJoueur, vitesseAdversaire
+    var vitesseJoueur = 0;
+    var vitesseAdversaire = 0;
+
+    //pointage de chaque joueur : pointsJoueur, pointsAdversaire
+    var pointsJoueur = 0;
+    var pointsAdversaire = 0;
+
+    //Nom de chaque joueur : nomJoueur, nomAdversaire
+    var nomJoueur;
+    var nomAdversaire;
+
+    //Position de toutes les pièces : tableau listePieces liste<Piece> avec positionX, positionY, touchee
+    var pieces = new Array();
+    for(var i = 0; i < 5; i++)
+    {
+      //pieces.push(new Piece(0, 0, false));
+    }
+    
+    //Nom du joueur gagnant : nomGagnant
+    var nomGagnant = "";
+
+  /*=====================================*/
+
+    var TOUCHE_GAUCHE = 37;
+    var TOUCHE_HAUT = 38;
+    var TOUCHE_DROITE = 39;
+
+    function initialiser()
+    {
+      var formulairePseudo = document.getElementById("formulaire-pseudo");
+      formulairePseudo.addEventListener("submit", authentifier);
+    }
+
+    function gererToucheRelevee(evenement)
+    {
+      //delete touches[evenement.keyCode];
+      serveurJeu.posterVariableNumerique("touche-relevee", evenement.keyCode);
+    }
+
+    function gererToucheEnfoncee(evenement)
+    {
+      //touches[evenement.keyCode] = true;
+      serveurJeu.posterVariableTextuelle("joueur-en-action", nomJoueur);
+      serveurJeu.posterVariableNumerique("touche-enfoncee", evenement.keyCode);
+    }
+
+    function authentifier(evenement)
+    {
+      evenement.preventDefault();
+      pseudonyme = document.getElementById("champ-pseudo").value;
+
+      nomJoueur = pseudonyme;
+      console.log("Le joueur s'appelle " + pseudonyme);
+
+      serveurJeu.connecter();
+    }
+           
+    serveurJeu.confirmerConnexion = function()
+    {
+        console.log("Je suis connecte.");
+        serveurJeu.demanderAuthentification(pseudonyme);
+
+        //Interaction clavier
+        //APPUI SUR UNE TOUCHE
+        window.addEventListener("keydown", gererToucheEnfoncee);
+        //AU RELEVEMENT D'UNE TOUCHE
+        window.addEventListener("keyup", gererToucheRelevee);
+
+        //serveurJeu.posterVariableTextuelle("argent", "million");
+    }
+    serveurJeu.confirmerAuthentification = function(listePseudo)
+    {
+        console.log("Je suis authentifie.");
+        console.log("Les autres participants sont " + JSON.stringify(listePseudo));
+    }
+    serveurJeu.apprendreAuthentification = function(pseudonyme)
+    {
+        console.log("Nouvel opposant :  " + pseudonyme);
+        nomAdversaire = pseudonyme;
+    }
+    serveurJeu.recevoirVariable = function(variable)
+    {
+        //console.log("Surcharge de recevoirVariable " + variable.cle + " = " + variable.valeur);
+
+        if(variable.cle == "joueur-en-action")
+        {
+          joueurFaisantAction = variable.valeur;
+          console.log("Le joueur en action est " + variable.valeur);
+        }
+
+        if(variable.cle == "touche-enfoncee")
+        {
+          var codeTouche = parseInt(variable.valeur);
+          switch (codeTouche)
+          {
+            case TOUCHE_GAUCHE:
+              console.log(joueurFaisantAction + " va à gauche");
+              break;
+            case TOUCHE_DROITE:
+              console.log(joueurFaisantAction + " va à droite");
+              break;
+            case TOUCHE_HAUT:
+              console.log(joueurFaisantAction + " saute");
+              break;
+            default:
+              break;
+          }
+        }
+    }
+
+    initialiser();
+
+    </script>
+  </body>
+</html>
