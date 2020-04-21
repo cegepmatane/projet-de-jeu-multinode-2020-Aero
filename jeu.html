@@ -9,17 +9,13 @@
         <script src="js/Joueur.js"></script>
         <script src="js/Piece.js"></script>
         <script src="js/JeuAero.js"></script>
+        <script src="js/Multijoueur.js"></script>
+        <script src="js/MultiNode.js"></script>
         <script src="js/VueAccueil.js"></script>
         <script src="js/VueJeu.js"></script>
         <script src="js/VueFin.js"></script>
         <script src="js/application.js"></script>
         <link rel="stylesheet" href="css/style.css">
-        <style>
-            body{
-                padding: 0;
-                margin: 0;
-            }
-        </style>
     </head>
     <body>
         <script type="plain/text" id="page-accueil">
@@ -32,7 +28,7 @@
                 </p>
                 <form id="formulaire-joueur">
                     <label>Entrer votre nom</label>
-                    <input type="text" id="nom-joueur"/>
+                    <input type="text" id="nom-joueur" required/>
                     <input type="submit" id="enregistrer-joueur"/>
                 </form>
                 <div id="btn">
@@ -41,7 +37,7 @@
             </div>
         </script>
         <script type="plain/text" id="page-jeu">
-            <canvas id="ecran-jeu" width="1000" height="800" ></canvas>
+            <canvas id="ecran-jeu" ></canvas>
         </script>
     
         <script type="plain/text" id="page-fin">

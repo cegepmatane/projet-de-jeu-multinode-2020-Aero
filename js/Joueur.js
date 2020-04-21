@@ -123,9 +123,9 @@ var Joueur = function(scene, position)
         //TODO ajouter l'animation
     }
 
-    this.avancer = function()
+    this.avancer = function(vitesse)
     {
-        centrerDeplacement(10);
+        centrerDeplacement(vitesse);
         if (!enMouvement)
         {
             spriteJoueur.gotoAndPlay("avancer");
@@ -133,9 +133,9 @@ var Joueur = function(scene, position)
         }
     }
 
-    this.reculer = function()
+    this.reculer = function(vitesse)
     {
-        centrerDeplacement(-10);
+        centrerDeplacement(-vitesse);
         if (!enMouvement)
         {
             spriteJoueur.gotoAndPlay("reculer");
@@ -152,13 +152,13 @@ var Joueur = function(scene, position)
     //Restreindre le mouvement du joueur au centre de l'écran
     function centrerDeplacement(valeurDeplacement)
     {
-        if(spriteJoueur.x <= frontiereDroite
-            && spriteJoueur.x >= frontiereGauche)
-        {
+        // if(spriteJoueur.x <= frontiereDroite
+        //     && spriteJoueur.x >= frontiereGauche)
+        // {
             spriteJoueur.x += valeurDeplacement;
-            if(spriteJoueur.x >= frontiereDroite){spriteJoueur.x = frontiereDroite;}
-            if(spriteJoueur.x <= frontiereGauche){spriteJoueur.x = frontiereGauche;}
-        }
+            //if(spriteJoueur.x >= frontiereDroite){spriteJoueur.x = frontiereDroite;}
+            //if(spriteJoueur.x <= frontiereGauche){spriteJoueur.x = frontiereGauche;}
+        //}
     }
 
     initialiser();

@@ -3,31 +3,35 @@ var ArrierePlan = function(scene)
     var conteneur;
     var charge;
 
+    var LARGEUR_ECRAN = window.innerWidth;
+    var HAUTEUR_ECRAN = window.innerHeight;
+
     function initialiser()
     {
         conteneur = new createjs.Container();
         charge = false;
 
         //DANS L'ORDRE DU PLUS LOINTAIN AU PLUS PROCHE
-        imageCiel = new Image();
+        imageCiel = new Image(LARGEUR_ECRAN, HAUTEUR_ECRAN);
         matriceCiel = new createjs.Matrix2D();
         shapeCiel = new createjs.Shape();
         imageCiel.onload = creerShapePaysage;
         imageCiel.src = "img/arrierePlan-ciel.png";
 
-        imageImmeublesArriere = new Image();
+        imageImmeublesArriere = new Image(LARGEUR_ECRAN, HAUTEUR_ECRAN);
         matriceImmeublesArriere = new createjs.Matrix2D();
         shapeImmeublesArriere = new createjs.Shape();
         imageImmeublesArriere.onload = creerShapePaysage;
         imageImmeublesArriere.src = "img/immeubles-arriere.png";
 
-        imageImmeublesAvant = new Image();
+        imageImmeublesAvant = new Image(LARGEUR_ECRAN, HAUTEUR_ECRAN);
         matriceImmeublesAvant = new createjs.Matrix2D();
         shapeImmeublesAvant = new createjs.Shape();
         imageImmeublesAvant.onload = creerShapePaysage;
         imageImmeublesAvant.src = "img/immeubles-avant.png";
 
-        imageToitAvant = new Image();
+        imageToitAvant = new Image(LARGEUR_ECRAN, HAUTEUR_ECRAN);
+        imageToitAvant.height = 10;
         matriceToitAvant = new createjs.Matrix2D();
         shapeToitAvant = new createjs.Shape();
         imageToitAvant.onload = creerShapePaysage;
@@ -36,21 +40,21 @@ var ArrierePlan = function(scene)
 
     function creerShapePaysage()
     {
-        shapeCiel.graphics.beginBitmapFill(imageCiel, "repeat", matriceCiel).
-            drawRect(0,0,1000,800).
+        shapeCiel.graphics.beginBitmapFill(imageCiel, "repeat-x", matriceCiel).
+            drawRect(0,0,LARGEUR_ECRAN, HAUTEUR_ECRAN).
             endStroke();
 
-        shapeImmeublesArriere.graphics.beginBitmapFill(imageImmeublesArriere, "repeat", matriceImmeublesArriere).
-            drawRect(0,0,1000,800).
-            endStroke();
+        shapeImmeublesArriere.graphics.beginBitmapFill(imageImmeublesArriere, "repeat-x", matriceImmeublesArriere).
+        drawRect(0,0,LARGEUR_ECRAN, HAUTEUR_ECRAN).
+        endStroke();
 
-        shapeImmeublesAvant.graphics.beginBitmapFill(imageImmeublesAvant, "repeat", matriceImmeublesAvant).
-            drawRect(0,0,1000,800).
-            endStroke();
+        shapeImmeublesAvant.graphics.beginBitmapFill(imageImmeublesAvant, "repeat-x", matriceImmeublesAvant).
+        drawRect(0,0,LARGEUR_ECRAN, HAUTEUR_ECRAN).
+        endStroke();
 
-        shapeToitAvant.graphics.beginBitmapFill(imageToitAvant, "repeat", matriceToitAvant).
-            drawRect(0,0,1000,800).
-            endStroke();
+        shapeToitAvant.graphics.beginBitmapFill(imageToitAvant, "repeat-x", matriceToitAvant).
+        drawRect(0,0,LARGEUR_ECRAN, HAUTEUR_ECRAN).
+        endStroke();
 
         conteneur.addChild(shapeCiel);
         conteneur.addChild(shapeImmeublesArriere);
@@ -70,22 +74,24 @@ var ArrierePlan = function(scene)
         scene.addChild(conteneur);
     }
 
-    this.animer = function(vitesse)
+    this.animer = function(vitesseArrierePlan, vitesseJoueur)
     {
         //Si on avance
-        if (vitesse < 0)
+        if (vitesseArrierePlan < 0)
         {
-            matriceCiel.translate(vitesse,0);
-            matriceImmeublesArriere.translate(vitesse - 1 ,0);
-            matriceImmeublesAvant.translate(vitesse - 3 ,0);
-            matriceToitAvant.translate(vitesse - 5, 0);
+            conteneur.x += vitesseJoueur;
+            matriceCiel.translate(vitesseArrierePlan,0);
+            matriceImmeublesArriere.translate(vitesseArrierePlan - 1 ,0);
+            matriceImmeublesAvant.translate(vitesseArrierePlan - 3 ,0);
+            matriceToitAvant.translate(vitesseArrierePlan - 5, 0);
         }
-        else if (vitesse > 0)
+        else if (vitesseArrierePlan > 0)
         {
-            matriceCiel.translate(vitesse,0);
-            matriceImmeublesArriere.translate(vitesse + 1 ,0);
-            matriceImmeublesAvant.translate(vitesse + 3 ,0);
-            matriceToitAvant.translate(vitesse + 5, 0);
+            conteneur.x -= vitesseJoueur;
+            matriceCiel.translate(vitesseArrierePlan,0);
+            matriceImmeublesArriere.translate(vitesseArrierePlan + 1 ,0);
+            matriceImmeublesAvant.translate(vitesseArrierePlan + 3 ,0);
+            matriceToitAvant.translate(vitesseArrierePlan + 5, 0);
         }
     }
 

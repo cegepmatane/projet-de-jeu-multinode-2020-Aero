@@ -1,53 +1,69 @@
-var JeuAero = function(nomJoueurEntre)
+var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
 {
     var TOUCHE_GAUCHE = 37;
     var TOUCHE_HAUT = 38;
     var TOUCHE_DROITE = 39;
-    var TOUCHE_BAS = 40;
     var NOMBRE_PIECES = 10;
+    var POINTS_PIECE = 10;
     var TICKER = 60;
     var INTENSITE_PESANTEUR = 9.81;
-    var TIMER = 20;
+    var TIMER = 100;
     var REPARTITION_PIECES_X = 5000;
     var REPARTITION_PIECES_Y = 500;
-
+    var vitesseXJoueur;
     var vitesseYJoueur;
     var arrierePlan;
     var vitesseArrierePlan;
     var scene;
-    var piece;
+    var ctx;
     var joueur;
+    var adversaire;
     var testChargement;
     var touches = {};
+    var tableauObstacles = [];
+    var conteneurInterface;
     var affichageTimer;
     var tempsRestant;
-    var nomJoueur;
-    var tableauObstacles = [];
+    var affichageNomJoueur;
+
+    //Variables multijoueur
+    var joueurArrive = false;
+    var adversaireArrive = false;
+    var partieTerminee = false;
+    var pieces;
+    var nomGagnant = "";
+    var pointsJoueur = 0;
+    var pointsAdversaire = 0;
+    var posJoueurX;
+    var posJoueurY;
+    var posAdversaireX;
+    var posAdversaireY;
+
+    const VARIABLE_LISTE_PIECES = "variable_liste_pieces";
 
     function initialiser()
     {
+        serveurJeu.recevoirVariable = recevoirVariable;
+
+        if(ordreJoueur == 1)
+        {
+            creerPositionPieces();
+        }
+
         var ecranJeu = document.querySelector("#ecran-jeu");
+        ctx = ecranJeu.getContext('2d');
         scene = new createjs.Stage(ecranJeu);
         createjs.Ticker.setFPS(TICKER);
 
+        occuperEspaceEcran();
+
         vitesseArrierePlan = 0;
         vitesseYJoueur = 0;
-
-        affichageTimer = new createjs.Text("Temps restant: ", "30px Arial", "#000000");
-        affichageTimer.x = 25;
-        affichageTimer.y = 60;
-
         var tempsDebut = (new Date()).getTime();
         var tempsEnLair = tempsDebut;
+        vitesseXJoueur = 15;
 
-        nomJoueur = new createjs.Text("Joueur: ", "30px Arial", "#000000");
-        nomJoueur.x = 25;
-        nomJoueur.y = 20;
-
-        var piecesRestantes = NOMBRE_PIECES;
-        affichagePoints = new createjs.Text("Points: ", "30px Arial", "#000000");
-        affichagePoints.x = 25;
-        affichagePoints.y = 100;
+        creerInterface()
 
         //Rafraichit la scène
         createjs.Ticker.addEventListener("tick", rafraichir);
@@ -57,9 +73,8 @@ var JeuAero = function(nomJoueurEntre)
             //Calcul du temps écoulé
             tempsActuel = (new Date()).getTime();
             var temps = (tempsActuel-tempsEnLair)/1000;
-
             //Calcul du timer
-            tempsRestant =TIMER-((tempsActuel-tempsDebut)/1000);
+            tempsRestant = TIMER - ((tempsActuel-tempsDebut)/1000);
             if(tempsRestant <= 0)
             {
                 createjs.Ticker.removeEventListener("tick", rafraichir);
@@ -67,7 +82,6 @@ var JeuAero = function(nomJoueurEntre)
             }
             else
             {
-                //console.log(tempsRestant);
                 affichageTimer.set({text: "Temps restant: "+Math.floor(tempsRestant) + "s"});
             }
 
@@ -78,42 +92,21 @@ var JeuAero = function(nomJoueurEntre)
                 //console.log("VITESSE JOUEUR EN Y : " + vitesseYJoueur);
                 joueur.tomber(vitesseYJoueur);
             }
-
-            //Vérification à chaque tick
-            //En comparaison avec le systeme de mouvement vu en cours (switch) celui-ci est plus fluide est réactif
-            //
-            //Le déplacement de l'environnement se fait selon les déplacements du joueur
             if (touches[TOUCHE_GAUCHE])
             {
-                joueur.reculer();
-
-                for (var i = 0; i < NOMBRE_PIECES; i++)
-                {
-                    pieces[i].animer(vitesseArrierePlan);
-                }
-                for (var i = 0; i < tableauObstacles.length; i++)
-                {
-                    tableauObstacles[i].animer(vitesseArrierePlan);
-                }
-
-                arrierePlan.animer(vitesseArrierePlan);
+                scene.x += vitesseXJoueur;
+                conteneurInterface.x -= vitesseXJoueur;
+                joueur.reculer(vitesseXJoueur);
                 vitesseArrierePlan = 5;
+                gererTranslationObjets();
             }
             if (touches[TOUCHE_DROITE])
             {  
-                joueur.avancer();
-
-                for (var i = 0; i < NOMBRE_PIECES; i++)
-                {
-                    pieces[i].animer(vitesseArrierePlan);
-                }
-                for (var i = 0; i < tableauObstacles.length; i++)
-                {
-                    tableauObstacles[i].animer(vitesseArrierePlan);
-                }
-
-                arrierePlan.animer(vitesseArrierePlan);
+                scene.x -= vitesseXJoueur;
+                conteneurInterface.x += vitesseXJoueur;
+                joueur.avancer(vitesseXJoueur);
                 vitesseArrierePlan = -5;
+                gererTranslationObjets();
             }
             if (touches[TOUCHE_HAUT])
             { 
@@ -126,92 +119,52 @@ var JeuAero = function(nomJoueurEntre)
                 }
             }
 
-            //Détection de la collision avec la pièce
-            for (var i = 0; i < NOMBRE_PIECES; i++)
+            //DETECTION COLLISION
+            for (var i = 0; i < pieces.length; i++)
             {
                 if (gererCollisionPiece(joueur.getRectangle(), pieces[i].getRectangle()))
                 {
                     console.log("Le joueur a touché la piece");
-                    pieces[i].disparaitre();
-                    piecesRestantes--;
-                    affichagePoints.set({text: "Points: " + (NOMBRE_PIECES - piecesRestantes)});
-                }
-                if(piecesRestantes == 0)
-                {
-                    createjs.Ticker.removeEventListener("tick", rafraichir);
-                    window.location = "#fin-partie-gagnee";
+                    ramasserPieceJoueur(i);
                 }
             }
-
             if(gererCollisionSol(joueur.getRectangle()))
             {
                 vitesseYJoueur = 0;
                 joueur.setAuSol(true);
             }
 
-            nomJoueur.set({text: "Joueur: " + nomJoueurEntre});
-            scene.addChild(affichageTimer);
-            scene.addChild(affichagePoints);
-            scene.addChild(nomJoueur);
-
+            scene.setChildIndex(conteneurInterface, 1);
             scene.update(evenementTick);
         }
 
-        //APPUI SUR UNE TOUCHE
-        window.addEventListener("keydown", gererToucheEnfoncee);
-        //AU RELEVEMENT D'UNE TOUCHE
-        window.addEventListener("keyup", gererToucheRelevee);
-
+        ajouterEvenementsTouches();
         arrierePlan = new ArrierePlan(scene);
         joueur = new Joueur(scene, {x: ecranJeu.width/3 ,y: ecranJeu.height/2});
-
-        pieces = new Array();
-        for(var i = 0; i < NOMBRE_PIECES; i++)
-        {
-            pieces.push(new Piece(scene, {x: getNombreAleatoire(REPARTITION_PIECES_X), y: getNombreAleatoire(REPARTITION_PIECES_Y)}));
-        }
-
+        adversaire = new Joueur(scene, {x: ecranJeu.width/3 ,y: ecranJeu.height/2});
         sol = new createjs.Rectangle(0,750,1000,100);
-
-////////////////////////////////////////////////////////////////////////////////////
-
-        var donneesObstacles = [
-            {
-                x : 50,
-                y : 50,
-                width: 2,
-                height: 1
-            },
-            {
-                x : 1000,
-                y : 100,
-                width: 1,
-                height: 4
-            },
-            {
-                x : 1000,
-                y : 300,
-                width: 4,
-                height: 1
-            },
-            {
-                x : 1600,
-                y : 200,
-                width: 2,
-                height: 2
-            }
-        ];
-
-        donneesObstacles.forEach(element => {
-            tableauObstacles.push(new Obstacle(element.x, element.y, element.width, element.height, scene));
-        });
-
-
-////////////////////////////////////////////////////////////////////////////////////
-
 
         //Vérification du chargement du poteau
         testChargement = setInterval(testerChargement, 100);
+    }
+
+    function creerPositionPieces()
+    {
+        var positionsPieces = new Array();
+        for(var i = 0; i < NOMBRE_PIECES; i++)
+        {
+            positionsPieces.push({x: getNombreAleatoire(REPARTITION_PIECES_X), y: getNombreAleatoire(REPARTITION_PIECES_Y)});
+        }
+        serveurJeu.posterVariableTextuelle(nomJoueur + "=>" + VARIABLE_LISTE_PIECES, JSON.stringify(positionsPieces));
+    }
+
+    function appliquerListePieces(listePieces)
+    {
+        pieces = new Array();
+        for(var i = 0; i < NOMBRE_PIECES; i++)
+        {
+            pieces.push(new Piece(scene, listePieces[i]));
+        }
     }
 
     function getNombreAleatoire(valeurMax)
@@ -219,11 +172,18 @@ var JeuAero = function(nomJoueurEntre)
         return (Math.floor(Math.random() * valeurMax));
     }
 
+    function ajouterEvenementsTouches()
+    {
+        //APPUI SUR UNE TOUCHE
+        window.addEventListener("keydown", gererToucheEnfoncee);
+        //AU RELEVEMENT D'UNE TOUCHE
+        window.addEventListener("keyup", gererToucheRelevee);
+    }
+
     function gererToucheRelevee(evenement)
     {
         //Annulation du ralentissement/acceleration
         vitesseArrierePlan = 0;
-
         delete touches[evenement.keyCode];
         joueur.attendre();
     }
@@ -235,27 +195,21 @@ var JeuAero = function(nomJoueurEntre)
     
     function testerChargement()
     {
-        if(joueur.estCharge() && arrierePlan.estCharge())
+        if(joueur.estCharge() && adversaire.estCharge() && arrierePlan.estCharge())
         {
-            afficherJoueurEtArrierePlan();
+            afficherJoueursEtArrierePlan();
             for (var i = 0; i < NOMBRE_PIECES; i++)
             {
                 if(pieces[i].estCharge()){  pieces[i].afficher();   }
             }
-
-            for (var i = 0; i < tableauObstacles.length; i++)
-            {
-                tableauObstacles[i].afficher();
-            }
-
             clearInterval(testChargement);
         }
-        
     }
     
-    function afficherJoueurEtArrierePlan()
+    function afficherJoueursEtArrierePlan()
     {
         arrierePlan.afficher();
+        adversaire.afficher();
         joueur.afficher();
     }
 
@@ -276,17 +230,132 @@ var JeuAero = function(nomJoueurEntre)
 
     function gererCollisionSol(rectangleJoueur)
     {
-        if(rectangleJoueur.y + rectangleJoueur.height <= sol.y)
+        return (rectangleJoueur.y + rectangleJoueur.height <= sol.y) ?  false : true;
+    }
+
+    function occuperEspaceEcran()
+    {
+        var canvas = document.querySelector("#ecran-jeu");
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    function gererTranslationObjets()
+    {
+        for (var i = 0; i < pieces.length; i++)
         {
-            return false;
+            pieces[i].animer(vitesseArrierePlan);
         }
-        else
+        arrierePlan.animer(vitesseArrierePlan, vitesseXJoueur);
+    }
+
+    function creerInterface()
+    {
+        conteneurInterface = new createjs.Container();
+        affichageTimer = new createjs.Text("Temps restant: ", "30px Arial", "#000000");
+        affichageTimer.x = 25;
+        affichageTimer.y = 60;
+        affichageNomJoueur = new createjs.Text("Joueur: ", "30px Arial", "#000000");
+        affichageNomJoueur.set({text: "Joueur: " + nomJoueur});
+        affichageNomJoueur.x = 25;
+        affichageNomJoueur.y = 20;
+        affichagePoints = new createjs.Text("Points: ", "30px Arial", "#000000");
+        affichagePoints.x = 25;
+        affichagePoints.y = 100;
+
+        conteneurInterface.addChild(affichageTimer);
+        conteneurInterface.addChild(affichagePoints);
+        conteneurInterface.addChild(affichageNomJoueur);
+
+        scene.addChild(conteneurInterface);
+    }
+
+    //FIN DE PARTIE
+    function finirPartieJoueur()
+    {
+        serveurJeu.posterVariableBooleenne(nomJoueur + "=>" + "joueur-arrive", true);
+    }
+
+    //RAMASSAGE DE PIECES
+    function ramasserPieceJoueur(indexPiece)
+    {
+        serveurJeu.posterVariableNumerique(nomJoueur + "=>" + "joueur-ramasse", indexPiece);
+    }
+
+    function identifierComposantCleVariable(cleVariable)
+    {
+      var composantCle = cleVariable.split('=>');
+      var cle = {
+          pseudonyme : composantCle[0],
+          nom : composantCle[1]
+      }
+      return cle;
+    }
+
+    var recevoirVariable = function(variable)
+    {
+        var cle = identifierComposantCleVariable(variable.cle);
+        //console.log("Surcharge de recevoirVariable " + variable.cle + " = " + variable.valeur);
+        if(cle.pseudonyme == nomJoueur)
         {
-            //joueur.y = sol.y - rectangleJoueur.height;
-            return true;
+          switch(cle.nom)
+          {
+            case "touche-enfoncee":
+                effectuerDeplacementJoueur(variable.valeur);
+                break;
+            case "joueur-ramasse":
+                effectuerRamassage(variable.valeur, nomJoueur);
+                break;
+            default:
+              break;
+          }
+        }
+        else if (cle.pseudonyme == nomAdversaire)
+        {
+          switch(cle.nom)
+          {
+            case "touche-enfoncee":
+              effectuerDeplacementAdversaire(variable.valeur);
+              break;
+            case "joueur-ramasse":
+                effectuerRamassage(variable.valeur, nomAdversaire);
+                break;
+            default:
+              break;
+          }
+        }
+        switch(cle.nom)
+        {
+            case VARIABLE_LISTE_PIECES:
+                appliquerListePieces(JSON.parse(variable.valeur));
+                break;
         }
     }
 
-    initialiser();
+    function effectuerRamassage(valeur, nom)
+    {
+        console.log(pieces);
+        pieces[valeur].disparaitre();
+        delete pieces[valeur];
+        var nouveauTableauPieces = new Array();
+        pieces.forEach(element => 
+        {
+            if(!(element == undefined))
+            {
+                nouveauTableauPieces.push(element);
+            }
+        });
+        pieces = nouveauTableauPieces;
+        console.log(pieces);
 
+        //effectuerAugmentationPointage(POINTS_PIECE, nom);
+    }
+
+    function effectuerAugmentationPointage(valeur, nom)
+    {
+        (nom == nomJoueur) ? pointsJoueur = valeur : pointsAdversaire = valeur;
+        actualiserPoints();
+    }
+
+    initialiser();
 }

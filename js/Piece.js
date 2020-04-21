@@ -67,7 +67,6 @@ var Piece = function(scene, position)
     this.disparaitre = function()
     {
         scene.removeChild(spritePiece);
-        spritePiece.y = -500;
     }
 
     this.estCharge = function()
