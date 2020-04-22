@@ -3,12 +3,14 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     var TOUCHE_GAUCHE = 37;
     var TOUCHE_HAUT = 38;
     var TOUCHE_DROITE = 39;
-    var NOMBRE_PIECES = 10;
+
+    var NOMBRE_PIECES = 30;
     var POINTS_PIECE = 10;
+    var BONUS_PREMIER = 100;
     var TICKER = 60;
     var INTENSITE_PESANTEUR = 9.81;
     var TIMER = 200;
-    var REPARTITION_PIECES_X = 5000;
+    var REPARTITION_PIECES_X = 15000;
     var REPARTITION_PIECES_Y = 500;
     var arrierePlan;
     var vitesseArrierePlan;
@@ -23,11 +25,12 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     var affichageTimer;
     var tempsRestant;
     var affichageNomJoueur;
+    var imageArrivee;
 
     //Variables multijoueur
-    var joueurArrive = false;
-    var adversaireArrive = false;
-    var partieTerminee = false;
+    var joueurArrive;
+    var adversaireArrive;
+    var partieTerminee;
     var pieces;
     var nomGagnant = "";
     var pointsJoueur = 0;
@@ -42,6 +45,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     const RELEVEMENT_TOUCHE = "touche-relevee";
     const RAMASSAGE_PIECE = "joueur-ramasse";
     const MOUVEMENT_ADVERSAIRE = "mouvement-adversaire";
+    const JOUEUR_ARRIVE = "joueur-arrive";
 
     function initialiser()
     {
@@ -63,11 +67,16 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         vitesseYJoueur = 0;
         var tempsDebut = (new Date()).getTime();
         var tempsEnLair = tempsDebut;
+
+        partieTerminee = false;
+        var joueurArrive = false;
+        var adversaireArrive = false;
+
         //Positions et vitesses initiales
         vitesseXJoueur = vitesseXAdversaire = 15;
         positionJoueur = positionAdversaire = {x: ecranJeu.width/3 ,y: ecranJeu.height/2};
 
-        creerInterface()
+        creerInterface();
 
         //Rafraichit la scène
         createjs.Ticker.addEventListener("tick", rafraichir);
@@ -87,6 +96,12 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
             else
             {
                 affichageTimer.set({text: "Temps restant: "+Math.floor(tempsRestant) + "s"});
+            }
+
+            if(partieTerminee)
+            {
+                createjs.Ticker.removeEventListener("tick", rafraichir);
+                window.location = "#fin-partie-gagnee";
             }
 
             //Appliquer la gravité
@@ -138,6 +153,11 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
                 joueur.setAuSol(true);
             }
 
+            if(arrivee.estCharge() && gererArrivee(joueur.getRectangle()))
+            {
+                finirPartieJoueur();
+            }
+
             if(adversaire.estCharge())
             {
                 notifierPositionJoueur();
@@ -153,6 +173,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         joueur = new Joueur(scene, positionJoueur);
         adversaire = new Joueur(scene, positionAdversaire);
         sol = new createjs.Rectangle(0,750,1000,100);
+        arrivee = new Arrivee(scene, {x: REPARTITION_PIECES_X, y: 0});
 
         //Vérification du chargement du poteau
         testChargement = setInterval(testerChargement, 100);
@@ -202,10 +223,10 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     
     function testerChargement()
     {
-        if(joueur.estCharge() && adversaire.estCharge() && arrierePlan.estCharge())
+        if(joueur.estCharge() && adversaire.estCharge() && arrierePlan.estCharge() && arrivee.estCharge())
         {
             afficherJoueursEtArrierePlan();
-            for (var i = 0; i < NOMBRE_PIECES; i++)
+            for (var i = 0; i < pieces.length; i++)
             {
                 if(pieces[i].estCharge()){  pieces[i].afficher();   }
             }
@@ -216,6 +237,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     function afficherJoueursEtArrierePlan()
     {
         arrierePlan.afficher();
+        arrivee.afficher();
         adversaire.afficher();
         joueur.afficher();
     }
@@ -238,6 +260,11 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     function gererCollisionSol(rectangleJoueur)
     {
         return (rectangleJoueur.y + rectangleJoueur.height <= sol.y) ?  false : true;
+    }
+
+    function gererArrivee(rectangleJoueur)
+    {
+        return (rectangleJoueur.x + rectangleJoueur.width <= arrivee.getPosition().x) ?  false : true;
     }
 
     function occuperEspaceEcran()
@@ -289,7 +316,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     //FIN DE PARTIE
     function finirPartieJoueur()
     {
-        serveurJeu.posterVariableBooleenne(nomJoueur + "=>" + "joueur-arrive", true);
+        serveurJeu.posterVariableBooleenne(nomJoueur + "=>" + JOUEUR_ARRIVE, true);
     }
 
     //RAMASSAGE DE PIECES
@@ -331,6 +358,9 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
             case RAMASSAGE_PIECE:
                 effectuerRamassage(variable.valeur, nomJoueur);
                 break;
+            case JOUEUR_ARRIVE:
+                effectuerArrivee(variable.valeur, nomJoueur);
+                break;
             default:
               break;
           }
@@ -350,6 +380,9 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
                 break;
             case MOUVEMENT_ADVERSAIRE:
                 positionAdversaire = JSON.parse(variable.valeur);
+                break;
+            case JOUEUR_ARRIVE:
+                effectuerArrivee(variable.valeur, nomAdversaire);
                 break;
             default:
               break;
@@ -405,6 +438,39 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         console.log(pieces);
 
         effectuerAugmentationPointage(POINTS_PIECE, nom);
+    }
+
+    function effectuerArrivee(valeur, nom)
+    {
+        if(nom == nomJoueur)
+        {
+            joueurArrive = valeur;
+            if(!adversaireArrive)
+            {
+                effectuerAugmentationPointage(BONUS_PREMIER, nom);
+            }
+        }
+        else
+        {
+            adversaireArrive = valeur;
+            if(!joueurArrive)
+            {
+                effectuerAugmentationPointage(BONUS_PREMIER, nom);
+            }
+        }
+
+        console.log(nom + " est arrivé !");
+        verifierFinPartie();
+    }
+
+    function verifierFinPartie()
+    {
+        if(joueurArrive && adversaireArrive)
+        {
+            partieTerminee = true;
+            nomGagnant = (pointsJoueur > pointsAdversaire) ? nomJoueur : nomAdversaire;
+            console.log("Le gagnant est " + nomGagnant);
+        }
     }
 
     function effectuerAugmentationPointage(valeur, nom)

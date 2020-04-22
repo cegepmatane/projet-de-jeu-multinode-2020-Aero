@@ -36,6 +36,7 @@ var ArrierePlan = function(scene)
         shapeToitAvant = new createjs.Shape();
         imageToitAvant.onload = creerShapePaysage;
         imageToitAvant.src = "img/toit-avant.png";
+
     }
 
     function creerShapePaysage()
@@ -60,7 +61,6 @@ var ArrierePlan = function(scene)
         conteneur.addChild(shapeImmeublesArriere);
         conteneur.addChild(shapeImmeublesAvant);
         conteneur.addChild(shapeToitAvant);
-
         charge = true;
     }
 
