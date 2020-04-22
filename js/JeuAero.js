@@ -153,7 +153,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
                 joueur.setAuSol(true);
             }
 
-            if(arrivee.estCharge() && gererArrivee(joueur.getRectangle()) && !joueurArrive)
+            if(arrivee.estCharge() && gererArrivee(joueur.getRectangle()))
             {
                 finirPartieJoueur();
             }
@@ -264,7 +264,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
 
     function gererArrivee(rectangleJoueur)
     {
-        return (rectangleJoueur.x + rectangleJoueur.width <= arrivee.getPosition().x) ?  false : true;
+        return (rectangleJoueur.x + rectangleJoueur.width >= arrivee.getPosition().x && !joueurArrive) ?  true : false;
     }
 
     function occuperEspaceEcran()
@@ -359,7 +359,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
                 effectuerRamassage(variable.valeur, nomJoueur);
                 break;
             case JOUEUR_ARRIVE:
-                effectuerArrivee(variable.valeur, nomJoueur);
+                effectuerArrivee(nomJoueur);
                 break;
             default:
               break;
@@ -382,7 +382,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
                 positionAdversaire = JSON.parse(variable.valeur);
                 break;
             case JOUEUR_ARRIVE:
-                effectuerArrivee(variable.valeur, nomAdversaire);
+                effectuerArrivee(nomAdversaire);
                 break;
             default:
               break;
@@ -440,11 +440,11 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         effectuerAugmentationPointage(POINTS_PIECE, nom);
     }
 
-    function effectuerArrivee(valeur, nom)
+    function effectuerArrivee(nom)
     {
         if(nom == nomJoueur)
         {
-            joueurArrive = valeur;
+            joueurArrive = true;
             if(!adversaireArrive)
             {
                 effectuerAugmentationPointage(BONUS_PREMIER, nom);
@@ -452,7 +452,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         }
         else
         {
-            adversaireArrive = valeur;
+            adversaireArrive = true;
             if(!joueurArrive)
             {
                 effectuerAugmentationPointage(BONUS_PREMIER, nom);
