@@ -109,6 +109,17 @@ var Joueur = function(scene, position)
         return rectangle;
     }
 
+    this.getPosition = function() 
+    {    
+        return {x: spriteJoueur.x, y: spriteJoueur.y};
+      }
+
+    this.setPosition = function(position)
+    {
+        spriteJoueur.x = position.x;
+        spriteJoueur.y = position.y;
+    }
+
     this.sauter = function(vitesse)
     {
         spriteJoueur.y += vitesse;

@@ -7,11 +7,9 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     var POINTS_PIECE = 10;
     var TICKER = 60;
     var INTENSITE_PESANTEUR = 9.81;
-    var TIMER = 100;
+    var TIMER = 200;
     var REPARTITION_PIECES_X = 5000;
     var REPARTITION_PIECES_Y = 500;
-    var vitesseXJoueur;
-    var vitesseYJoueur;
     var arrierePlan;
     var vitesseArrierePlan;
     var scene;
@@ -34,12 +32,16 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     var nomGagnant = "";
     var pointsJoueur = 0;
     var pointsAdversaire = 0;
-    var posJoueurX;
-    var posJoueurY;
-    var posAdversaireX;
-    var posAdversaireY;
+    var vitesseXJoueur;
+    var vitesseYJoueur;
+    var positionJoueur;
+    var positionAdversaire;
 
     const VARIABLE_LISTE_PIECES = "variable_liste_pieces";
+    const APPUI_TOUCHE = "touche-enfoncee";
+    const RELEVEMENT_TOUCHE = "touche-relevee";
+    const RAMASSAGE_PIECE = "joueur-ramasse";
+    const MOUVEMENT_ADVERSAIRE = "mouvement-adversaire";
 
     function initialiser()
     {
@@ -61,7 +63,9 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         vitesseYJoueur = 0;
         var tempsDebut = (new Date()).getTime();
         var tempsEnLair = tempsDebut;
-        vitesseXJoueur = 15;
+        //Positions et vitesses initiales
+        vitesseXJoueur = vitesseXAdversaire = 15;
+        positionJoueur = positionAdversaire = {x: ecranJeu.width/3 ,y: ecranJeu.height/2};
 
         creerInterface()
 
@@ -100,8 +104,8 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
                 vitesseArrierePlan = 5;
                 gererTranslationObjets();
             }
-            if (touches[TOUCHE_DROITE])
-            {  
+            if(touches[TOUCHE_DROITE])
+            {
                 scene.x -= vitesseXJoueur;
                 conteneurInterface.x += vitesseXJoueur;
                 joueur.avancer(vitesseXJoueur);
@@ -134,14 +138,20 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
                 joueur.setAuSol(true);
             }
 
+            if(adversaire.estCharge())
+            {
+                notifierPositionJoueur();
+                adversaire.setPosition(positionAdversaire);
+            }
+
             scene.setChildIndex(conteneurInterface, 1);
             scene.update(evenementTick);
         }
 
         ajouterEvenementsTouches();
         arrierePlan = new ArrierePlan(scene);
-        joueur = new Joueur(scene, {x: ecranJeu.width/3 ,y: ecranJeu.height/2});
-        adversaire = new Joueur(scene, {x: ecranJeu.width/3 ,y: ecranJeu.height/2});
+        joueur = new Joueur(scene, positionJoueur);
+        adversaire = new Joueur(scene, positionAdversaire);
         sol = new createjs.Rectangle(0,750,1000,100);
 
         //Vérification du chargement du poteau
@@ -182,15 +192,12 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
 
     function gererToucheRelevee(evenement)
     {
-        //Annulation du ralentissement/acceleration
-        vitesseArrierePlan = 0;
-        delete touches[evenement.keyCode];
-        joueur.attendre();
+        serveurJeu.posterVariableNumerique(nomJoueur + "=>" + RELEVEMENT_TOUCHE, evenement.keyCode);
     }
 
     function gererToucheEnfoncee(evenement)
     {
-        touches[evenement.keyCode] = true;
+        serveurJeu.posterVariableNumerique(nomJoueur + "=>" + APPUI_TOUCHE, evenement.keyCode);
     }
     
     function testerChargement()
@@ -279,7 +286,12 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     //RAMASSAGE DE PIECES
     function ramasserPieceJoueur(indexPiece)
     {
-        serveurJeu.posterVariableNumerique(nomJoueur + "=>" + "joueur-ramasse", indexPiece);
+        serveurJeu.posterVariableNumerique(nomJoueur + "=>" + RAMASSAGE_PIECE, indexPiece);
+    }
+
+    function notifierPositionJoueur()
+    {
+        serveurJeu.posterVariableTextuelle(nomJoueur + "=>" + MOUVEMENT_ADVERSAIRE, JSON.stringify(joueur.getPosition()));
     }
 
     function identifierComposantCleVariable(cleVariable)
@@ -300,10 +312,14 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         {
           switch(cle.nom)
           {
-            case "touche-enfoncee":
-                effectuerDeplacementJoueur(variable.valeur);
+            case APPUI_TOUCHE:
+                //Le serveur ne fait que valider l'appui sur une touche, le mouvement se fait dans rafraichir sinon la fluidité du mouvement est perdue
+                touches[variable.valeur] = true;
                 break;
-            case "joueur-ramasse":
+            case RELEVEMENT_TOUCHE:
+                effectuerArretJoueur(variable.valeur);
+                break;
+            case RAMASSAGE_PIECE:
                 effectuerRamassage(variable.valeur, nomJoueur);
                 break;
             default:
@@ -314,11 +330,17 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         {
           switch(cle.nom)
           {
-            case "touche-enfoncee":
-              effectuerDeplacementAdversaire(variable.valeur);
-              break;
-            case "joueur-ramasse":
+            case APPUI_TOUCHE:
+                effectuerDeplacementAdversaire(variable.valeur);
+                break;
+            case RELEVEMENT_TOUCHE:
+                adversaire.attendre();
+                break;
+            case RAMASSAGE_PIECE:
                 effectuerRamassage(variable.valeur, nomAdversaire);
+                break;
+            case MOUVEMENT_ADVERSAIRE:
+                positionAdversaire = JSON.parse(variable.valeur);
                 break;
             default:
               break;
@@ -330,6 +352,31 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
                 appliquerListePieces(JSON.parse(variable.valeur));
                 break;
         }
+    }
+
+    function effectuerArretJoueur(valeur)
+    {
+        vitesseArrierePlan = 0;
+        touches[valeur] = false;
+        joueur.attendre();
+    }
+
+    function effectuerDeplacementAdversaire(valeur)
+    {
+        var codeTouche = parseInt(valeur);
+        switch (codeTouche)
+        {
+            case TOUCHE_GAUCHE:
+                adversaire.reculer(vitesseXAdversaire);
+                break;
+            case TOUCHE_DROITE:
+                adversaire.avancer(vitesseXAdversaire);
+                break;
+            case TOUCHE_HAUT:
+                break;
+            default:
+                break;
+        } 
     }
 
     function effectuerRamassage(valeur, nom)
