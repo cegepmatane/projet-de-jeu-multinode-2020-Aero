@@ -487,5 +487,10 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         }
     }
 
+    this.getResultats = function()
+    {
+        return [{nom: nomJoueur, points: pointsJoueur}, {nom: nomAdversaire, points: pointsAdversaire}];
+    }
+
     initialiser();
 }

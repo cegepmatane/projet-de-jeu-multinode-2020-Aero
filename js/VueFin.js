@@ -4,12 +4,17 @@ var VueFin = function()
 
     function initialiser()
     {
-        htmlFin = document.querySelector("#page-fin").innerHTML;
+        messageFin = document.querySelector("#page-fin").innerHTML;
+        resultatsJoueur = document.querySelector("#resultats-joueur").innerHTML;
+        resultatsAdversaire = document.querySelector("#resultats-adversaire").innerHTML;
     }
 
-    this.afficher = function(texte)
+    this.afficher = function(texteFin, joueurs)
     {
-        document.querySelector("body").innerHTML = htmlFin.replace("{texte-fin-partie}", texte);
+        document.querySelector("body").innerHTML = messageFin.replace("{texte-fin-partie}", texteFin);
+
+        document.querySelector("body").innerHTML += resultatsJoueur.replace("{texte-joueur}", "Joueur: " + joueurs[0].nom + " /Points: " + joueurs[0].points);
+        document.querySelector("body").innerHTML += resultatsAdversaire.replace("{texte-adversaire}", "Opposant: " + joueurs[1].nom + " /Points: " + joueurs[1].points); 
     }
 
     initialiser();

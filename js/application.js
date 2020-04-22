@@ -51,12 +51,12 @@
         }
         else if(hash.match(/^#fin-partie-gagnee/))
         {
-            vueFin.afficher("Bravo ! Vous avez récolté toutes les émeraudes disséminées" +
-                " sur les toits de la ville. Mais continuez de courir, d'autres sont à votre poursuite !!");
+            vueFin.afficher("Bravo ! Vous avez récolté les émeraudes disséminées" +
+                " sur les toits de la ville et vaincu votre opposant. Mais continuez de courir, d'autres sont à votre poursuite !!", jeu.getResultats());
         }
         else if(hash.match(/^#fin-partie-perdue/))
         {
-            vueFin.afficher("Dommage pour vous...Vous n'avez pas eu de chance cette fois-ci. Soyez plus rapide !");
+            vueFin.afficher("Dommage pour vous...Vous n'avez pas eu de chance cette fois-ci. Soyez plus rapide la prochaine fois !", jeu.getResultats());
         }
     }
 
