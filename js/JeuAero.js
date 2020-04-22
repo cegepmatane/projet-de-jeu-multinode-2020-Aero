@@ -261,18 +261,27 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         conteneurInterface = new createjs.Container();
         affichageTimer = new createjs.Text("Temps restant: ", "30px Arial", "#000000");
         affichageTimer.x = 25;
-        affichageTimer.y = 60;
-        affichageNomJoueur = new createjs.Text("Joueur: ", "30px Arial", "#000000");
-        affichageNomJoueur.set({text: "Joueur: " + nomJoueur});
+        affichageTimer.y = 20;
+
+        affichageNomJoueur = new createjs.Text("Joueur: " + nomJoueur, "30px Arial", "#000000");
         affichageNomJoueur.x = 25;
-        affichageNomJoueur.y = 20;
-        affichagePoints = new createjs.Text("Points: ", "30px Arial", "#000000");
-        affichagePoints.x = 25;
-        affichagePoints.y = 100;
+        affichageNomJoueur.y = 100;
+        affichagePointsJoueur = new createjs.Text("Points: " + pointsJoueur, "30px Arial", "#000000");
+        affichagePointsJoueur.x = 25;
+        affichagePointsJoueur.y = 140;
+
+        affichageNomAdversaire = new createjs.Text("Opposant: " + nomAdversaire, "30px Arial", "#000000");
+        affichageNomAdversaire.x = 25;
+        affichageNomAdversaire.y = 200;
+        affichagePointsAdversaire = new createjs.Text("Points: " + pointsAdversaire, "30px Arial", "#000000");
+        affichagePointsAdversaire.x = 25;
+        affichagePointsAdversaire.y = 240;
 
         conteneurInterface.addChild(affichageTimer);
-        conteneurInterface.addChild(affichagePoints);
+        conteneurInterface.addChild(affichagePointsJoueur);
         conteneurInterface.addChild(affichageNomJoueur);
+        conteneurInterface.addChild(affichageNomAdversaire);
+        conteneurInterface.addChild(affichagePointsAdversaire);
 
         scene.addChild(conteneurInterface);
     }
@@ -395,13 +404,21 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         pieces = nouveauTableauPieces;
         console.log(pieces);
 
-        //effectuerAugmentationPointage(POINTS_PIECE, nom);
+        effectuerAugmentationPointage(POINTS_PIECE, nom);
     }
 
     function effectuerAugmentationPointage(valeur, nom)
     {
-        (nom == nomJoueur) ? pointsJoueur = valeur : pointsAdversaire = valeur;
-        actualiserPoints();
+        if(nom == nomJoueur)
+        {
+            pointsJoueur += valeur;
+            affichagePointsJoueur.set({text: "Points: " + pointsJoueur});
+        }
+        else
+        {
+            pointsAdversaire += valeur;
+            affichagePointsAdversaire.set({text: "Points: " + pointsAdversaire});
+        }
     }
 
     initialiser();
