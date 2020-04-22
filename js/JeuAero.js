@@ -101,7 +101,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
             if(partieTerminee)
             {
                 createjs.Ticker.removeEventListener("tick", rafraichir);
-                window.location = "#fin-partie-gagnee";
+                window.location = (nomGagnant == nomJoueur) ? "#fin-partie-gagnee" : "#fin-partie-perdue";
             }
 
             //Appliquer la gravité
@@ -153,7 +153,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
                 joueur.setAuSol(true);
             }
 
-            if(arrivee.estCharge() && gererArrivee(joueur.getRectangle()))
+            if(arrivee.estCharge() && gererArrivee(joueur.getRectangle()) && !joueurArrive)
             {
                 finirPartieJoueur();
             }
