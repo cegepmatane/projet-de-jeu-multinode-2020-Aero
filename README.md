@@ -1,5 +1,4 @@
-# projet-de-jeu-multinode-2020-Emustle
-projet-de-jeu-multinode-2020-Emustle created by GitHub Classroom
+# Projet de jeu multijoueur avec CreateJS et NodeJS
 
 ## Projet réalisé par Hy-Vong Georges Dit Rap
 
