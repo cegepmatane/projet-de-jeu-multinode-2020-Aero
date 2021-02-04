@@ -6,6 +6,8 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     const RAMASSAGE_PIECE = "joueur-ramasse";
     const MOUVEMENT_ADVERSAIRE = "mouvement-adversaire";
     const JOUEUR_ARRIVE = "joueur-arrive";
+    const VITESSE_JOUEURS = 20;
+    const NOIR = "#000000";
 
     const TOUCHE_GAUCHE = 37;
     const TOUCHE_HAUT = 38;
@@ -22,17 +24,16 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     var arrierePlan;
     var vitesseArrierePlan;
     var scene;
-    var ctx;
     var joueur;
     var adversaire;
     var testChargement;
     var touches = {};
-    var tableauObstacles = [];
+    //var tableauObstacles = [];
     var conteneurInterface;
     var affichageTimer;
     var tempsRestant;
     var affichageNomJoueur;
-    var imageArrivee;
+   //var imageArrivee;
 
     //Variables multijoueur
     var joueurArrive;
@@ -43,7 +44,9 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     var pointsJoueur = 0;
     var pointsAdversaire = 0;
     var vitesseXJoueur;
+    var vitesseXAdversaire;
     var vitesseYJoueur;
+    var vitesseYAdversaire;
     var positionJoueur;
     var positionAdversaire;
 
@@ -51,41 +54,36 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     {
         serveurJeu.recevoirVariable = recevoirVariable;
 
-        if(ordreJoueur == 1)
-        {
-            creerPositionPieces();
-        }
+        if(ordreJoueur == 1){   creerPositionPieces();    }
 
         var ecranJeu = document.querySelector("#ecran-jeu");
-        ctx = ecranJeu.getContext('2d');
         scene = new createjs.Stage(ecranJeu);
         createjs.Ticker.setFPS(TICKER);
 
         occuperEspaceEcran();
+        creerInterface();
 
+        partieTerminee = false;
+        joueurArrive = false;
+        adversaireArrive = false;
         vitesseArrierePlan = 0;
         vitesseYJoueur = 0;
         var tempsDebut = (new Date()).getTime();
-        var tempsEnLair = tempsDebut;
-
-        partieTerminee = false;
-        var joueurArrive = false;
-        var adversaireArrive = false;
+        var tempsDeSaut = 0;
+        var momentSaut = tempsDebut;
 
         //Positions et vitesses initiales
-        vitesseXJoueur = vitesseXAdversaire = 15;
+        vitesseXJoueur = vitesseXAdversaire = VITESSE_JOUEURS;
         positionJoueur = positionAdversaire = {x: ecranJeu.width/3 ,y: ecranJeu.height/2};
-
-        creerInterface();
 
         //Rafraichit la scène
         createjs.Ticker.addEventListener("tick", rafraichir);
 
         function rafraichir(evenementTick)
         {
-            //Calcul du temps écoulé
+            //Calcul du temps écoulé depuis le début de la partie
             tempsActuel = (new Date()).getTime();
-            var temps = (tempsActuel-tempsEnLair)/1000;
+
             //Calcul du timer
             tempsRestant = TIMER - ((tempsActuel-tempsDebut)/1000);
             if(tempsRestant <= 0)
@@ -107,7 +105,9 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
             //Appliquer la gravité
             if(!joueur.estAuSol())
             {
-                vitesseYJoueur += 0.5 * INTENSITE_PESANTEUR * (temps*temps);
+                //Temps depuis que le joueur a sauté
+                tempsDeSaut = (tempsActuel-momentSaut)/1000;
+                vitesseYJoueur += 0.5 * INTENSITE_PESANTEUR * (tempsDeSaut*tempsDeSaut);
                 //console.log("VITESSE JOUEUR EN Y : " + vitesseYJoueur);
                 joueur.tomber(vitesseYJoueur);
             }
@@ -127,13 +127,16 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
                 vitesseArrierePlan = -5;
                 gererTranslationObjets();
             }
+
             if (touches[TOUCHE_HAUT])
             { 
                 if(joueur.estAuSol())
                 {
-                    vitesseYJoueur = 0.5 * INTENSITE_PESANTEUR * (temps*temps) - 15;
+                    tempsDeSaut = 0;
+                    momentSaut =  (new Date()).getTime();
+
+                    vitesseYJoueur = -15;
                     joueur.sauter(vitesseYJoueur);
-                    tempsEnLair =  (new Date()).getTime();
                     joueur.setAuSol(false);
                 }
             }
@@ -177,6 +180,13 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
 
         //Vérification du chargement du poteau
         testChargement = setInterval(testerChargement, 100);
+    }
+
+    function occuperEspaceEcran()
+    {
+        var canvas = document.querySelector("#ecran-jeu");
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
     }
 
     function creerPositionPieces()
@@ -267,13 +277,6 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         return (rectangleJoueur.x + rectangleJoueur.width >= arrivee.getPosition().x && !joueurArrive) ?  true : false;
     }
 
-    function occuperEspaceEcran()
-    {
-        var canvas = document.querySelector("#ecran-jeu");
-        canvas.width  = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-
     function gererTranslationObjets()
     {
         for (var i = 0; i < pieces.length; i++)
@@ -286,21 +289,21 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     function creerInterface()
     {
         conteneurInterface = new createjs.Container();
-        affichageTimer = new createjs.Text("Temps restant: ", "30px Arial", "#000000");
+        affichageTimer = new createjs.Text("Temps restant: ", "30px Arial", NOIR);
         affichageTimer.x = 25;
         affichageTimer.y = 20;
 
-        affichageNomJoueur = new createjs.Text("Joueur: " + nomJoueur, "30px Arial", "#000000");
+        affichageNomJoueur = new createjs.Text("Joueur: " + nomJoueur, "30px Arial", NOIR);
         affichageNomJoueur.x = 25;
         affichageNomJoueur.y = 100;
-        affichagePointsJoueur = new createjs.Text("Points: " + pointsJoueur, "30px Arial", "#000000");
+        affichagePointsJoueur = new createjs.Text("Points: " + pointsJoueur, "30px Arial", NOIR);
         affichagePointsJoueur.x = 25;
         affichagePointsJoueur.y = 140;
 
-        affichageNomAdversaire = new createjs.Text("Opposant: " + nomAdversaire, "30px Arial", "#000000");
+        affichageNomAdversaire = new createjs.Text("Opposant: " + nomAdversaire, "30px Arial", NOIR);
         affichageNomAdversaire.x = 25;
         affichageNomAdversaire.y = 200;
-        affichagePointsAdversaire = new createjs.Text("Points: " + pointsAdversaire, "30px Arial", "#000000");
+        affichagePointsAdversaire = new createjs.Text("Points: " + pointsAdversaire, "30px Arial", NOIR);
         affichagePointsAdversaire.x = 25;
         affichagePointsAdversaire.y = 240;
 
