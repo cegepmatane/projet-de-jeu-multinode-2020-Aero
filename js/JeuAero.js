@@ -1,17 +1,24 @@
 var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
 {
-    var TOUCHE_GAUCHE = 37;
-    var TOUCHE_HAUT = 38;
-    var TOUCHE_DROITE = 39;
+    const VARIABLE_LISTE_PIECES = "variable_liste_pieces";
+    const APPUI_TOUCHE = "touche-enfoncee";
+    const RELEVEMENT_TOUCHE = "touche-relevee";
+    const RAMASSAGE_PIECE = "joueur-ramasse";
+    const MOUVEMENT_ADVERSAIRE = "mouvement-adversaire";
+    const JOUEUR_ARRIVE = "joueur-arrive";
 
-    var NOMBRE_PIECES = 30;
-    var POINTS_PIECE = 10;
-    var BONUS_PREMIER = 100;
-    var TICKER = 60;
-    var INTENSITE_PESANTEUR = 9.81;
-    var TIMER = 200;
-    var REPARTITION_PIECES_X = 15000;
-    var REPARTITION_PIECES_Y = 500;
+    const TOUCHE_GAUCHE = 37;
+    const TOUCHE_HAUT = 38;
+    const TOUCHE_DROITE = 39;
+    const NOMBRE_PIECES = 30;
+    const POINTS_PIECE = 10;
+    const BONUS_PREMIER = 100;
+    const TICKER = 60;
+    const INTENSITE_PESANTEUR = 9.81;
+    const TIMER = 200;
+    const REPARTITION_PIECES_X = 15000;
+    const REPARTITION_PIECES_Y = 500;
+
     var arrierePlan;
     var vitesseArrierePlan;
     var scene;
@@ -39,13 +46,6 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     var vitesseYJoueur;
     var positionJoueur;
     var positionAdversaire;
-
-    const VARIABLE_LISTE_PIECES = "variable_liste_pieces";
-    const APPUI_TOUCHE = "touche-enfoncee";
-    const RELEVEMENT_TOUCHE = "touche-relevee";
-    const RAMASSAGE_PIECE = "joueur-ramasse";
-    const MOUVEMENT_ADVERSAIRE = "mouvement-adversaire";
-    const JOUEUR_ARRIVE = "joueur-arrive";
 
     function initialiser()
     {
