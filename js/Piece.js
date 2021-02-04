@@ -79,11 +79,11 @@ var Piece = function(scene, position)
         //Si on avance
         if (vitesse < 0)
         {
-            spritePiece.x -= 10;
+            spritePiece.x -= 0;
         }
         else if (vitesse > 0)
         {
-            spritePiece.x += 10;
+            spritePiece.x += 0;
         }
     }
 
