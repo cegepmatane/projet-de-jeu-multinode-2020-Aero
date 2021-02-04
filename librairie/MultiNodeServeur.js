@@ -16,16 +16,6 @@
     var listeConnection;
     var listeJoueur;
 
-    const POINTS_DE_VIE_MAXIMUM = 20;
-
-    const VARIABLE = 
-    {
-        ATTAQUE: "attaque",
-        SOIN: "soin",
-        POINT_DE_VIE: "point-de-vie",
-        FIN_PARTIE: "fin-partie"
-    };
-
     var messageTransfertVariable = {etiquette:"TRANSFERT_VARIABLE"};
     var messageDemandeAuthentification = {etiquette:"DEMANDE_AUTHENTIFICATION"};
     // messages recus
@@ -102,6 +92,7 @@
 
         listeJoueur.forEach(function (itemListeJoueur, indexListeJoueur)
         {
+            /*
             if(itemListeJoueur.pointDeVie <= 0)
             {
                 variable =
@@ -111,6 +102,7 @@
                     valeur: true
                 };
             }
+            */
         });
 
         //Si variable a été définie, alors cela veut dire que la partie est terminée
@@ -157,7 +149,7 @@
         listeJoueur[identifiantConnection] = 
         {
             pseudonyme : messageDemandeAuthentification.pseudonyme,
-            pointDeVie : POINTS_DE_VIE_MAXIMUM
+            //pointDeVie : POINTS_DE_VIE_MAXIMUM
         };
 
         messageNotificationAuthentification.pseudonyme = 
@@ -207,6 +199,7 @@
         var cle = identifierComposantCleVariable(variable.cle);
         console.log("traiterVariableJeu - variables", variable , "=" , cle);
 
+        /*
         if(cle.nomAnonyme == VARIABLE.ATTAQUE)
         {            
             variable = attaquer(cle.pseudonyme, variable.valeur);
@@ -215,7 +208,7 @@
         {
             variable = soigner(cle.pseudonyme, variable.valeur);
         }
-
+        */
         if(variable)
         {
             console.log("traiterVariableJeu si variable", variable);
@@ -236,8 +229,24 @@
 
         return cle;
     }
+    
+    function getListeAutrePseudonyme(pseudonyme){
+        listePseudonyme = [];
+        listeJoueur.forEach(function (itemListeJoueur, indexListeJoueur) {
+            
+            if(pseudonyme != itemListeJoueur.pseudonyme){
 
+                listePseudonyme[listePseudonyme.length] = 
+                    itemListeJoueur.pseudonyme;
 
+            }
+
+        });
+        
+        return listePseudonyme;
+    }
+
+    /*
     function attaquer(pseudonymeAttaquant, valeur)
     {
         console.log("attaquer", "entrée");
@@ -286,22 +295,7 @@
         });
         return variable;    
     }
-
-    function getListeAutrePseudonyme(pseudonyme){
-        listePseudonyme = [];
-        listeJoueur.forEach(function (itemListeJoueur, indexListeJoueur) {
-            
-            if(pseudonyme != itemListeJoueur.pseudonyme){
-
-                listePseudonyme[listePseudonyme.length] = 
-                    itemListeJoueur.pseudonyme;
-
-            }
-
-        });
-        
-        return listePseudonyme;
-    }
+    */
 
 })();
 
