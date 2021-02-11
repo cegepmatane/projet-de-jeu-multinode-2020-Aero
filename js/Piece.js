@@ -33,7 +33,7 @@ var Piece = function(scene, position)
             },
             framerate: 4
         });
-        console.log("Spritesheet Piece créée");
+        //console.log("Spritesheet Piece créée");
 
         creerSprite();
     }
@@ -46,12 +46,11 @@ var Piece = function(scene, position)
         //Positionnement
         spritePiece.x = position.x;
         spritePiece.y = position.y;
-
         spritePiece.scaleX = spritePiece.scaleY = 0.4;
     
         //Pour les collisions :
         spritePiece.setBounds(spritePiece.x, spritePiece.y, 221 * spritePiece.scaleX, 421 * spritePiece.scaleY);
-        console.log("Sprite de la piece créée");
+        //console.log("Sprite de la piece créée");
 
         charge = true;
         //afficher();
@@ -59,9 +58,9 @@ var Piece = function(scene, position)
 
     this.afficher = function()
     {
-         //Ajout du sprite à la scène
-         console.log("piece-->afficher");
-         scene.addChild(spritePiece);
+        //Ajout du sprite à la scène
+        console.log("piece-->afficher");
+        scene.addChild(spritePiece);
     }
 
     this.disparaitre = function()

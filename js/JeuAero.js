@@ -1,11 +1,16 @@
 var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
 {
-    const VARIABLE_LISTE_PIECES = "variable_liste_pieces";
-    const APPUI_TOUCHE = "touche-enfoncee";
-    const RELEVEMENT_TOUCHE = "touche-relevee";
-    const RAMASSAGE_PIECE = "joueur-ramasse";
-    const MOUVEMENT_ADVERSAIRE = "mouvement-adversaire";
-    const JOUEUR_ARRIVE = "joueur-arrive";
+    const VARIABLE = 
+    {
+        LISTE_PIECES: "liste-pieces",
+        APPUI_TOUCHE: "appui-touche",
+        RELEVEMENT_TOUCHE: "relevement-touche",
+        RAMASSAGE_PIECE: "ramassage-piece",
+        MOUVEMENT_ADVERSAIRE: "mouvement-adversaire",
+        JOUEUR_ARRIVE: "joueur-arrive"
+    };
+    const REPARTITION_PIECES_X = 15000;
+    const REPARTITION_PIECES_Y = 500;
     const VITESSE_JOUEURS = 20;
     const NOIR = "#000000";
 
@@ -18,8 +23,6 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     const TICKER = 60;
     const INTENSITE_PESANTEUR = 9.81;
     const TIMER = 200;
-    const REPARTITION_PIECES_X = 15000;
-    const REPARTITION_PIECES_Y = 500;
 
     var arrierePlan;
     var vitesseArrierePlan;
@@ -28,7 +31,6 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     var adversaire;
     var testChargement;
     var touches = {};
-    //var tableauObstacles = [];
     var conteneurInterface;
     var affichageTimer;
     var tempsRestant;
@@ -74,7 +76,10 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
 
         //Positions et vitesses initiales
         vitesseXJoueur = vitesseXAdversaire = VITESSE_JOUEURS;
-        positionJoueur = positionAdversaire = {x: ecranJeu.width/3 ,y: ecranJeu.height/2};
+        positionJoueur = positionAdversaire = {
+            x: ecranJeu.width/3,
+            y: ecranJeu.height/2
+        };
 
         //Rafraichit la scène
         createjs.Ticker.addEventListener("tick", rafraichir);
@@ -84,22 +89,25 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
             //Calcul du temps écoulé depuis le début de la partie
             tempsActuel = (new Date()).getTime();
 
-            //Calcul du timer
-            tempsRestant = TIMER - ((tempsActuel-tempsDebut)/1000);
-            if(tempsRestant <= 0)
-            {
-                createjs.Ticker.removeEventListener("tick", rafraichir);
-                window.location = "#fin-partie-perdue";
-            }
-            else
-            {
-                affichageTimer.set({text: "Temps restant: "+Math.floor(tempsRestant) + "s"});
-            }
-
+            //Vérification de l'état de la partie
             if(partieTerminee)
             {
                 createjs.Ticker.removeEventListener("tick", rafraichir);
                 window.location = (nomGagnant == nomJoueur) ? "#fin-partie-gagnee" : "#fin-partie-perdue";
+            }
+            else
+            {
+                //Calcul du timer
+                tempsRestant = TIMER - ((tempsActuel-tempsDebut)/1000);
+                if(tempsRestant <= 0)
+                {
+                    createjs.Ticker.removeEventListener("tick", rafraichir);
+                    window.location = "#fin-partie-perdue";
+                }
+                else
+                {
+                    affichageTimer.set({text: "Temps restant: "+Math.floor(tempsRestant) + "s"});
+                }
             }
 
             //Appliquer la gravité
@@ -108,7 +116,6 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
                 //Temps depuis que le joueur a sauté
                 tempsDeSaut = (tempsActuel-momentSaut)/1000;
                 vitesseYJoueur += 0.5 * INTENSITE_PESANTEUR * (tempsDeSaut*tempsDeSaut);
-                //console.log("VITESSE JOUEUR EN Y : " + vitesseYJoueur);
                 joueur.tomber(vitesseYJoueur);
             }
             if (touches[TOUCHE_GAUCHE])
@@ -128,17 +135,14 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
                 gererTranslationObjets();
             }
 
-            if (touches[TOUCHE_HAUT])
+            if (touches[TOUCHE_HAUT] && joueur.estAuSol())
             { 
-                if(joueur.estAuSol())
-                {
-                    tempsDeSaut = 0;
-                    momentSaut =  (new Date()).getTime();
+                tempsDeSaut = 0;
+                momentSaut =  (new Date()).getTime();
 
-                    vitesseYJoueur = -15;
-                    joueur.sauter(vitesseYJoueur);
-                    joueur.setAuSol(false);
-                }
+                vitesseYJoueur = -15;
+                joueur.sauter(vitesseYJoueur);
+                joueur.setAuSol(false);
             }
 
             //DETECTION COLLISION
@@ -146,10 +150,11 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
             {
                 if (gererCollisionPiece(joueur.getRectangle(), pieces[i].getRectangle()))
                 {
-                    console.log("Le joueur a touché la piece");
+                    //console.log("Le joueur a touché la piece");
                     ramasserPieceJoueur(i);
                 }
             }
+
             if(gererCollisionSol(joueur.getRectangle()))
             {
                 vitesseYJoueur = 0;
@@ -171,7 +176,12 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
             scene.update(evenementTick);
         }
 
-        ajouterEvenementsTouches();
+        //APPUI SUR UNE TOUCHE
+        window.addEventListener("keydown", gererToucheEnfoncee);
+        //AU RELEVEMENT D'UNE TOUCHE
+        window.addEventListener("keyup", gererToucheRelevee);
+
+        //Création des éléments de la scène
         arrierePlan = new ArrierePlan(scene);
         joueur = new Joueur(scene, positionJoueur);
         adversaire = new Joueur(scene, positionAdversaire);
@@ -189,48 +199,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         canvas.height = window.innerHeight;
     }
 
-    function creerPositionPieces()
-    {
-        var positionsPieces = new Array();
-        for(var i = 0; i < NOMBRE_PIECES; i++)
-        {
-            positionsPieces.push({x: getNombreAleatoire(REPARTITION_PIECES_X), y: getNombreAleatoire(REPARTITION_PIECES_Y)});
-        }
-        serveurJeu.posterVariableTextuelle(nomJoueur + "=>" + VARIABLE_LISTE_PIECES, JSON.stringify(positionsPieces));
-    }
-
-    function appliquerListePieces(listePieces)
-    {
-        pieces = new Array();
-        for(var i = 0; i < NOMBRE_PIECES; i++)
-        {
-            pieces.push(new Piece(scene, listePieces[i]));
-        }
-    }
-
-    function getNombreAleatoire(valeurMax)
-    {
-        return (Math.floor(Math.random() * valeurMax));
-    }
-
-    function ajouterEvenementsTouches()
-    {
-        //APPUI SUR UNE TOUCHE
-        window.addEventListener("keydown", gererToucheEnfoncee);
-        //AU RELEVEMENT D'UNE TOUCHE
-        window.addEventListener("keyup", gererToucheRelevee);
-    }
-
-    function gererToucheRelevee(evenement)
-    {
-        serveurJeu.posterVariableNumerique(nomJoueur + "=>" + RELEVEMENT_TOUCHE, evenement.keyCode);
-    }
-
-    function gererToucheEnfoncee(evenement)
-    {
-        serveurJeu.posterVariableNumerique(nomJoueur + "=>" + APPUI_TOUCHE, evenement.keyCode);
-    }
-    
+    //CHARGEMENT DES ELEMENTS
     function testerChargement()
     {
         if(joueur.estCharge() && adversaire.estCharge() && arrierePlan.estCharge() && arrivee.estCharge())
@@ -242,48 +211,6 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
             }
             clearInterval(testChargement);
         }
-    }
-    
-    function afficherJoueursEtArrierePlan()
-    {
-        arrierePlan.afficher();
-        arrivee.afficher();
-        adversaire.afficher();
-        joueur.afficher();
-    }
-
-    function gererCollisionPiece(rectangleJoueur, rectanglePiece)
-	{
-		if(rectangleJoueur.x >= rectanglePiece.x + rectanglePiece.width ||
-			rectangleJoueur.x + rectangleJoueur.width <= rectanglePiece.x ||
-			rectangleJoueur.y >= rectanglePiece.y + rectanglePiece.height ||
-			rectangleJoueur.y + rectangleJoueur.height <= rectanglePiece.y)
-		{
-			return false;
-		}
-		else
-		{
-			return true;
-        }
-    }
-
-    function gererCollisionSol(rectangleJoueur)
-    {
-        return (rectangleJoueur.y + rectangleJoueur.height <= sol.y) ?  false : true;
-    }
-
-    function gererArrivee(rectangleJoueur)
-    {
-        return (rectangleJoueur.x + rectangleJoueur.width >= arrivee.getPosition().x && !joueurArrive) ?  true : false;
-    }
-
-    function gererTranslationObjets()
-    {
-        for (var i = 0; i < pieces.length; i++)
-        {
-            pieces[i].animer(vitesseArrierePlan);
-        }
-        arrierePlan.animer(vitesseArrierePlan, vitesseXJoueur);
     }
 
     function creerInterface()
@@ -316,21 +243,98 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         scene.addChild(conteneurInterface);
     }
 
-    //FIN DE PARTIE
-    function finirPartieJoueur()
+    function afficherJoueursEtArrierePlan()
     {
-        serveurJeu.posterVariableBooleenne(nomJoueur + "=>" + JOUEUR_ARRIVE, true);
+        arrierePlan.afficher();
+        arrivee.afficher();
+        adversaire.afficher();
+        joueur.afficher();
+    }
+
+    
+    //GESTION DES COLLISIONS
+    function gererCollisionPiece(rectangleJoueur, rectanglePiece)
+	{
+		if(rectangleJoueur.x >= rectanglePiece.x + rectanglePiece.width ||
+			rectangleJoueur.x + rectangleJoueur.width <= rectanglePiece.x ||
+			rectangleJoueur.y >= rectanglePiece.y + rectanglePiece.height ||
+			rectangleJoueur.y + rectangleJoueur.height <= rectanglePiece.y)
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+        }
+    }
+
+    function gererCollisionSol(rectangleJoueur)
+    {
+        return (rectangleJoueur.y + rectangleJoueur.height <= sol.y) ?  false : true;
+    }
+
+    function gererTranslationObjets()
+    {
+        for (var i = 0; i < pieces.length; i++)
+        {
+            pieces[i].animer(vitesseArrierePlan);
+        }
+        arrierePlan.animer(vitesseArrierePlan, vitesseXJoueur);
+    }
+
+    function gererArrivee(rectangleJoueur)
+    {
+        return (rectangleJoueur.x + rectangleJoueur.width >= arrivee.getPosition().x && !joueurArrive) ?  true : false;
+    }
+
+    /**
+     * 
+     * ENVOI DE VARIABLES AU SERVEUR 
+     *
+    */
+
+    //MANIPULATION DU TABLEAU DE PIECES
+    function creerPositionPieces()
+    {
+        var positionsPieces = new Array();
+        for(var i = 0; i < NOMBRE_PIECES; i++)
+        {
+            positionsPieces.push({x: getNombreAleatoire(REPARTITION_PIECES_X),
+                                 y: getNombreAleatoire(REPARTITION_PIECES_Y)});
+        }
+        serveurJeu.posterVariableTextuelle(nomJoueur + "=>" + VARIABLE.LISTE_PIECES, JSON.stringify(positionsPieces));
+    }
+
+    function getNombreAleatoire(valeurMax){
+        return Math.floor(Math.random() * valeurMax);
+    }
+
+    //GESTION DES INPUTS LOCAUX
+    function gererToucheRelevee(evenement)
+    {
+        serveurJeu.posterVariableNumerique(nomJoueur + "=>" + VARIABLE.RELEVEMENT_TOUCHE, evenement.keyCode);
+    }
+    function gererToucheEnfoncee(evenement)
+    {
+        serveurJeu.posterVariableNumerique(nomJoueur + "=>" + VARIABLE.APPUI_TOUCHE, evenement.keyCode);
     }
 
     //RAMASSAGE DE PIECES
     function ramasserPieceJoueur(indexPiece)
     {
-        serveurJeu.posterVariableNumerique(nomJoueur + "=>" + RAMASSAGE_PIECE, indexPiece);
+        serveurJeu.posterVariableNumerique(nomJoueur + "=>" + VARIABLE.RAMASSAGE_PIECE, indexPiece);
     }
 
+    //DEPLACEMENT DE L'ADVERSAIRE
     function notifierPositionJoueur()
     {
-        serveurJeu.posterVariableTextuelle(nomJoueur + "=>" + MOUVEMENT_ADVERSAIRE, JSON.stringify(joueur.getPosition()));
+        serveurJeu.posterVariableTextuelle(nomJoueur + "=>" + VARIABLE.MOUVEMENT_ADVERSAIRE, JSON.stringify(joueur.getPosition()));
+    }
+
+    //FIN DE PARTIE
+    function finirPartieJoueur()
+    {
+        serveurJeu.posterVariableBooleenne(nomJoueur + "=>" + VARIABLE.JOUEUR_ARRIVE, true);
     }
 
     function identifierComposantCleVariable(cleVariable)
@@ -343,6 +347,12 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
       return cle;
     }
 
+    /**
+     * 
+     * RECEPTION DES VARIABLES ET ACTIONS
+     * 
+    */
+
     var recevoirVariable = function(variable)
     {
         var cle = identifierComposantCleVariable(variable.cle);
@@ -351,17 +361,17 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         {
           switch(cle.nom)
           {
-            case APPUI_TOUCHE:
+            case VARIABLE.APPUI_TOUCHE:
                 //Le serveur ne fait que valider l'appui sur une touche, le mouvement se fait dans rafraichir sinon la fluidité du mouvement est perdue
                 touches[variable.valeur] = true;
                 break;
-            case RELEVEMENT_TOUCHE:
+            case VARIABLE.RELEVEMENT_TOUCHE:
                 effectuerArretJoueur(variable.valeur);
                 break;
-            case RAMASSAGE_PIECE:
+            case VARIABLE.RAMASSAGE_PIECE:
                 effectuerRamassage(variable.valeur, nomJoueur);
                 break;
-            case JOUEUR_ARRIVE:
+            case VARIABLE.JOUEUR_ARRIVE:
                 effectuerArrivee(nomJoueur);
                 break;
             default:
@@ -372,19 +382,19 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         {
           switch(cle.nom)
           {
-            case APPUI_TOUCHE:
+            case VARIABLE.APPUI_TOUCHE:
                 effectuerDeplacementAdversaire(variable.valeur);
                 break;
-            case RELEVEMENT_TOUCHE:
+            case VARIABLE.RELEVEMENT_TOUCHE:
                 adversaire.attendre();
                 break;
-            case RAMASSAGE_PIECE:
+            case VARIABLE.RAMASSAGE_PIECE:
                 effectuerRamassage(variable.valeur, nomAdversaire);
                 break;
-            case MOUVEMENT_ADVERSAIRE:
+            case VARIABLE.MOUVEMENT_ADVERSAIRE:
                 positionAdversaire = JSON.parse(variable.valeur);
                 break;
-            case JOUEUR_ARRIVE:
+            case VARIABLE.JOUEUR_ARRIVE:
                 effectuerArrivee(nomAdversaire);
                 break;
             default:
@@ -393,7 +403,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         }
         switch(cle.nom)
         {
-            case VARIABLE_LISTE_PIECES:
+            case VARIABLE.LISTE_PIECES:
                 appliquerListePieces(JSON.parse(variable.valeur));
                 break;
         }
@@ -443,6 +453,15 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         effectuerAugmentationPointage(POINTS_PIECE, nom);
     }
 
+    function appliquerListePieces(listePieces)
+    {
+        pieces = new Array();
+        for(var i = 0; i < NOMBRE_PIECES; i++)
+        {
+            pieces.push(new Piece(scene, listePieces[i]));
+        }
+    }
+
     function effectuerArrivee(nom)
     {
         if(nom == nomJoueur)
@@ -461,8 +480,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
                 effectuerAugmentationPointage(BONUS_PREMIER, nom);
             }
         }
-
-        console.log(nom + " est arrivé !");
+        //console.log(nom + " est arrivé !");
         verifierFinPartie();
     }
 
@@ -472,7 +490,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
         {
             partieTerminee = true;
             nomGagnant = (pointsJoueur > pointsAdversaire) ? nomJoueur : nomAdversaire;
-            console.log("Le gagnant est " + nomGagnant);
+            //console.log("Le gagnant est " + nomGagnant);
         }
     }
 

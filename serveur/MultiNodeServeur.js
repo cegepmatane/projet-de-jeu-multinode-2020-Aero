@@ -16,6 +16,17 @@
     var listeConnection;
     var listeJoueur;
 
+    const VARIABLE = 
+    {
+        LISTE_PIECES: "liste-pieces",
+        APPUI_TOUCHE: "appui-touche",
+        RELEVEMENT_TOUCHE: "relevement-touche",
+        RAMASSAGE_PIECE: "ramassage-piece",
+        MOUVEMENT_ADVERSAIRE: "mouvement-adversaire",
+        JOUEUR_ARRIVE: "joueur-arrive",
+        FIN_PARTIE: "fin-partie"
+    };
+
     var messageTransfertVariable = {etiquette:"TRANSFERT_VARIABLE"};
     var messageDemandeAuthentification = {etiquette:"DEMANDE_AUTHENTIFICATION"};
     // messages recus
@@ -25,7 +36,6 @@
     
 
     (function initialiser(){
-
         serveurHTTP = http.createServer();
         serveurHTTP.listen(8080);
 
@@ -36,85 +46,17 @@
         listeJoueur = [];
 
         websocketRouter.mount('/multinode', null, agirSurRequeteConnection);
-        
     })();
 
     function agirSurRequeteConnection(requete){
-
-        var connection = requete.accept(requete.origin);
-        
+        var connection = requete.accept(requete.origin);  
         listeConnection.push(connection);
-    
         connection.on('message', agirSurReceptionMessage);    
-    
         connection.on('close', agirSurFermetureConnection);
-        
         connection.on('error', agirSurErreurConnection);    
-
-    }
-
-    function agirSurReceptionMessage(message){
-
-        console.log(this.remoteAddress + " message. type: " +message.type);
-        // We only care about text messages
-        if (message.type === 'utf8') {
-            
-            console.log("message.utf8Data : ",message.utf8Data);
-            
-            messageReconstruit = JSON.parse(message.utf8Data);
-            
-            switch(messageReconstruit.etiquette) {
-
-                case messageDemandeAuthentification.etiquette:
-
-                    repondreDemandeAuthentification(this, messageReconstruit);
-                    
-                break;
-
-                case messageTransfertVariable.etiquette:
-
-                    repondreTransfertVariable(traiterVariableJeu(messageReconstruit));
-                    
-                break;
-
-            }
-
-            validerFinPartie();
-
-        }
-    }
-
-    function validerFinPartie()
-    {
-        console.log("validerFinPartie", "entrée");
-
-        var variable = null;
-
-        listeJoueur.forEach(function (itemListeJoueur, indexListeJoueur)
-        {
-            /*
-            if(itemListeJoueur.pointDeVie <= 0)
-            {
-                variable =
-                {
-                    type: "booleen",
-                    cle: itemListeJoueur.pseudonyme + "=>" + VARIABLE.FIN_PARTIE,
-                    valeur: true
-                };
-            }
-            */
-        });
-
-        //Si variable a été définie, alors cela veut dire que la partie est terminée
-        if(variable)
-        {
-            messageTransfertVariable.variable = variable;
-            repondreTransfertVariable(messageTransfertVariable);
-        }
     }
 
     function agirSurFermetureConnection(raison, description){
-
         /*
         var index = mirrorConnections.indexOf(connection);
         if (index !== -1) {
@@ -122,13 +64,31 @@
             mirrorConnections.splice(index, 1);
         }
         */
-
+    }
+    
+    function agirSurErreurConnection(erreur){
+        console.log('Connection error for peer ' + this.remoteAddress + ': ' + erreur);
     }
 
-    function agirSurErreurConnection(erreur){
-        
-        console.log('Connection error for peer ' + this.remoteAddress + ': ' + erreur);
+    function agirSurReceptionMessage(message){
+        console.log(this.remoteAddress + " message. type: " +message.type);
+        // We only care about text messages
+        if (message.type === 'utf8') {
+            console.log("message.utf8Data : ",message.utf8Data);
+            messageReconstruit = JSON.parse(message.utf8Data);
+            
+            switch(messageReconstruit.etiquette)
+            {
+                case messageDemandeAuthentification.etiquette:
+                    repondreDemandeAuthentification(this, messageReconstruit);
+                break;
 
+                case messageTransfertVariable.etiquette:
+                    repondreTransfertVariable(traiterVariableJeu(messageReconstruit));
+                break;
+            }
+            validerFinPartie();
+        }
     }
 
     function repondreDemandeAuthentification(connection, messageDemandeAuthentification){
@@ -141,7 +101,6 @@
         var reponse = JSON.stringify(messageConfirmationAuthentification);
 
         connection.send(reponse);
-
         console.log(reponse);
 
         identifiantConnection = listeConnection.indexOf(connection);
@@ -149,7 +108,8 @@
         listeJoueur[identifiantConnection] = 
         {
             pseudonyme : messageDemandeAuthentification.pseudonyme,
-            //pointDeVie : POINTS_DE_VIE_MAXIMUM
+            estArrive : false,
+            points: 0
         };
 
         messageNotificationAuthentification.pseudonyme = 
@@ -162,9 +122,7 @@
         listeConnection.forEach(function (itemListeConnection, indexListeConnection) {
 
             if(identifiantConnection != indexListeConnection){
-
                 itemListeConnection.send(reponse);
-
             }
 
         });
@@ -176,19 +134,15 @@
 
     function repondreTransfertVariable(messageTransfertVariable){
 
-        messageNotificationVariable.variable = 
-            messageTransfertVariable.variable;
+        messageNotificationVariable.variable = messageTransfertVariable.variable;
 
         var reponse = JSON.stringify(messageNotificationVariable);
 
         listeConnection.forEach(function (itemListeConnection, indexListeConnection) {
-
             itemListeConnection.send(reponse);
-
         });
 
         messageNotificationVariable.variable = null;
-
     }
 
     function traiterVariableJeu(messageReconstruit)
@@ -200,15 +154,32 @@
         console.log("traiterVariableJeu - variables", variable , "=" , cle);
 
         /*
-        if(cle.nomAnonyme == VARIABLE.ATTAQUE)
+        if(cle.nomAnonyme == VARIABLE.LISTE_PIECES)
         {            
-            variable = attaquer(cle.pseudonyme, variable.valeur);
+            variable = initialiserPositionsPieces(cle.pseudonyme, variable.valeur);
         }
-        else if(cle.nomAnonyme = VARIABLE.SOIN)
+        else if(cle.nomAnonyme = VARIABLE.APPUI_TOUCHE)
         {
-            variable = soigner(cle.pseudonyme, variable.valeur);
+            variable = appuyerTouche(cle.pseudonyme, variable.valeur);
+        }
+        else if(cle.nomAnonyme = VARIABLE.RELEVEMENT_TOUCHE)
+        {
+            variable = releverTouche(cle.pseudonyme, variable.valeur);
+        }
+        else if(cle.nomAnonyme = VARIABLE.RAMASSAGE_PIECE)
+        {
+            variable = augmenterPointage(cle.pseudonyme, variable.valeur);
+        }
+        else if(cle.nomAnonyme = VARIABLE.MOUVEMENT_ADVERSAIRE)
+        {
+            variable = deplacerAdversaire(cle.pseudonyme, variable.valeur);
+        }
+        else if(cle.nomAnonyme = VARIABLE.JOUEUR_ARRIVE)
+        {
+            variable = finir(cle.pseudonyme, variable.valeur);
         }
         */
+
         if(variable)
         {
             console.log("traiterVariableJeu si variable", variable);
@@ -230,72 +201,137 @@
         return cle;
     }
     
-    function getListeAutrePseudonyme(pseudonyme){
+    function getListeAutrePseudonyme(pseudonyme)
+    {
         listePseudonyme = [];
         listeJoueur.forEach(function (itemListeJoueur, indexListeJoueur) {
-            
-            if(pseudonyme != itemListeJoueur.pseudonyme){
-
+            if(pseudonyme != itemListeJoueur.pseudonyme)
+            {
                 listePseudonyme[listePseudonyme.length] = 
                     itemListeJoueur.pseudonyme;
-
             }
-
         });
         
         return listePseudonyme;
     }
-
-    /*
-    function attaquer(pseudonymeAttaquant, valeur)
+/*
+    function initialiserPositionsPieces(pseudonyme, valeur)
     {
-        console.log("attaquer", "entrée");
+        console.log("initialiserPositionPieces", "entrée");
         var variable = null;
         listeJoueur.forEach(function (itemListeJoueur, indexListeJoueur)
         {
-            //On cherche le joueur attaqué
-            if(itemListeJoueur.pseudonyme.indexOf(pseudonymeAttaquant) < 0)
+            if(itemListeJoueur.pseudonyme.indexOf(pseudonyme) < 0)
             {
-                //On applique les points de vie à enlever
-                itemListeJoueur.pointDeVie -= valeur;
+                var valeurX = Math.floor(Math.random() * REPARTITION_PIECES_X);
+                var valeurY = Math.floor(Math.random() * REPARTITION_PIECES_Y);
+        
+                for(var i = 0; i < NOMBRE_PIECES; i++)
+                {
+                    positionsPieces.push({x: valeurX, y: valeurY});
+                }
+
                 variable = 
                 {
                     type: "numerique",
-                    cle : itemListeJoueur.pseudonyme + "=>" + VARIABLE.POINT_DE_VIE,
-                    valeur : itemListeJoueur.pointDeVie
+                    cle : itemListeJoueur.pseudonyme + "=>" + VARIABLE.JOUEUR_ARRIVE,
+                    valeur : valeur
                 };
             }
         });
-        //Retour des points de vie du joueur qui a été attaqué
-        return variable;    
+        return variable; 
     }
 
-    function soigner(pseudonymeJoueurASoigner, valeurSoin)
+    function ramasserPiece(pseudonyme, valeur)
     {
+        console.log("ramasserPiece", "entrée");
         var variable = null;
         listeJoueur.forEach(function (itemListeJoueur, indexListeJoueur)
         {
-            if(itemListeJoueur.pseudonyme.indexOf(pseudonymeJoueurASoigner) >= 0)
+            if(itemListeJoueur.pseudonyme.indexOf(pseudonyme) < 0)
             {
-                if(itemListeJoueur.pointDeVie + valeurSoin > POINTS_DE_VIE_MAXIMUM)
-                {
-                    itemListeJoueur.pointDeVie = POINTS_DE_VIE_MAXIMUM;
-                }
-                else
-                {
-                    itemListeJoueur.pointDeVie += valeurSoin;
-                }
                 variable = 
                 {
-                    type: "numerique",
-                    cle : itemListeJoueur.pseudonyme + "=>" + VARIABLE.POINT_DE_VIE,
-                    valeur : itemListeJoueur.pointDeVie
+                    type: "booleen",
+                    cle : itemListeJoueur.pseudonyme + "=>" + VARIABLE.JOUEUR_ARRIVE,
+                    valeur : valeur
                 };
             }
         });
         return variable;    
     }
-    */
+
+    function deplacerAdversaire(pseudonyme, valeur)
+    {
+        console.log("deplacerAdversaire", "entrée");
+        var variable = null;
+        listeJoueur.forEach(function (itemListeJoueur, indexListeJoueur)
+        {
+            if(itemListeJoueur.pseudonyme.indexOf(pseudonyme) < 0)
+            {
+                variable = 
+                {
+                    type: "booleen",
+                    cle : itemListeJoueur.pseudonyme + "=>" + VARIABLE.JOUEUR_ARRIVE,
+                    valeur : valeur
+                };
+            }
+        });
+        return variable;    
+    }
+
+    function finir(pseudonyme, valeur)
+    {
+        console.log("finir", "entrée");
+        var variable = null;
+        listeJoueur.forEach(function (itemListeJoueur, indexListeJoueur)
+        {
+            if(itemListeJoueur.pseudonyme == pseudonyme)
+            {
+                itemListeJoueur.estArrive = valeur;
+                variable = 
+                {
+                    type: "booleen",
+                    cle : itemListeJoueur.pseudonyme + "=>" + VARIABLE.JOUEUR_ARRIVE,
+                    valeur : itemListeJoueur.estArrive
+                };
+            }
+        });
+        return variable;    
+    }
+*/
+    function validerFinPartie()
+    {
+        console.log("validerFinPartie", "entrée");
+
+        var variable = null;
+        var fini = true;
+        listeJoueur.forEach(function (itemListeJoueur, indexListeJoueur)
+        {
+            if(!itemListeJoueur.estArrive)
+                fini = false;       
+        });
+
+        if(fini)
+        {
+            listeJoueur.forEach(function (itemListeJoueur, indexListeJoueur)
+            {
+                variable =
+                {
+                    type: "booleen",
+                    cle: itemListeJoueur.pseudonyme + "=>" + VARIABLE.FIN_PARTIE,
+                    valeur: true
+                };     
+            });
+        }
+
+        //Si variable a été définie, alors cela veut dire que la partie est terminée
+        if(variable)
+        {
+            messageTransfertVariable.variable = variable;
+            repondreTransfertVariable(messageTransfertVariable);
+        }
+    }
 
 })();
 
