@@ -21,7 +21,6 @@
 
             try
             {
-
                 multinode.contact = new WebSocket("ws://127.0.0.1:8080/multinode");
                 //this.contact.onopen = () => contact.send("allo");
             }

@@ -9,7 +9,7 @@
     var nomAdversaire;
     var ordreJoueur;
     var serveurJeu;
-    var multijoueur;
+    //var multijoueur;
 
     function initialiser()
     {
