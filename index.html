@@ -30,13 +30,16 @@
                 <form id="formulaire-joueur">
                     <label>Entrer votre nom</label>
                     <input type="text" id="nom-joueur" required/>
-                    <input type="submit" id="enregistrer-joueur"/>
+                    <!-- <input type="submit" id="enregistrer-joueur"/> -->
+    
+                    <div id="btn">
+                        <input type="submit" id="valider-jouer" value="Jouer"/>
+                    </div>
                 </form>
-                <div id="btn">
-                    <a href="#jouer">Jouer</a>
-                </div>
+                <div id="timer"></div>
             </div>
         </script>
+
         <script type="plain/text" id="page-jeu">
             <canvas id="ecran-jeu" ></canvas>
         </script>
@@ -46,7 +49,7 @@
                 <h1>Fin de la partie</h1>
                 <p>{texte-fin-partie}</p>
                 <div id="btn">
-                    <a href="#accueil">Accueil</a>
+                    <a href="">Accueil</a>
                 </div>
             </div>
         </script>

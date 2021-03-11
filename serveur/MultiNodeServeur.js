@@ -323,6 +323,9 @@
                     valeur: true
                 };     
             });
+
+            listeConnection = [];
+            listeJoueur = [];
         }
 
         //Si variable a été définie, alors cela veut dire que la partie est terminée

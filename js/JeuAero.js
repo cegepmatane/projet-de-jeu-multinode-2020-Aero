@@ -11,7 +11,7 @@ var JeuAero = function(nomJoueur, nomAdversaire, serveurJeu, ordreJoueur)
     };
     const REPARTITION_PIECES_X = 15000;
     const REPARTITION_PIECES_Y = 500;
-    const VITESSE_JOUEURS = 20;
+    const VITESSE_JOUEURS = 25;
     const NOIR = "#000000";
 
     const TOUCHE_GAUCHE = 37;

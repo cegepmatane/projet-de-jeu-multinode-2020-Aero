@@ -41,11 +41,8 @@
         var hash = window.location.hash;
         console.log("naviguer", hash);
 
-        if(hash.match(/^#accueil/))
-        {
-            vueAccueil.afficher();
-        }
-        else if(hash.match(/^#jouer/))
+    
+        if(hash.match(/^#jouer/))
         {
             //lancerJeu();
         }
@@ -53,10 +50,18 @@
         {
             vueFin.afficher("Bravo ! Vous avez récolté les émeraudes disséminées" +
                 " sur les toits de la ville et vaincu votre opposant. Mais continuez de courir, d'autres sont à votre poursuite !!", jeu.getResultats());
+            nomAdversaire = "";
+            nomJoueur = "";
         }
         else if(hash.match(/^#fin-partie-perdue/))
         {
             vueFin.afficher("Dommage pour vous...Vous n'avez pas eu de chance cette fois-ci. Soyez plus rapide la prochaine fois !", jeu.getResultats());
+            nomAdversaire = "";
+            nomJoueur = "";
+        }
+        else
+        {
+            vueAccueil.afficher();
         }
     }
 
@@ -91,6 +96,7 @@
         {
           ordreJoueur = 1;
         }
+
         validerDebutPartie();
     }
 
@@ -98,15 +104,29 @@
     {
         console.log("Nouvel opposant :  " + pseudonyme);
         nomAdversaire = pseudonyme;
+
         validerDebutPartie();
     }
     
     function validerDebutPartie()
     {
+
         if(nomAdversaire != "" && nomJoueur != "")
         {
-            console.log("Début de la partie");
-            lancerJeu();
+            var tempsRestant = 3;
+            var timer = setInterval(function(){
+
+                if(tempsRestant <= 0){
+                    clearInterval(timer);
+                    console.log("Début de la partie");
+                    lancerJeu();
+                }
+                vueAccueil.mettreAJourTimer(tempsRestant);
+                tempsRestant -= 1;
+
+            }, 1000);
+                
+            //setTimeout(() => {  lancerJeu(); }, 2000);
         }
     }
 
