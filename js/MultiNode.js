@@ -21,7 +21,7 @@
 
             try
             {
-                multinode.contact = new WebSocket("ws://127.0.0.1:8080/multinode");
+                multinode.contact = new WebSocket("ws://51.79.55.148:8080/multinode");
                 //this.contact.onopen = () => contact.send("allo");
             }
             catch(erreur)
